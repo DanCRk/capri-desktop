@@ -1,6 +1,6 @@
 // Turns Claude Code hook events into things Capri says and does.
 
-import { LINES } from './lines.js';
+import { getLines } from './lines.js';
 import { pick, fmt, duration, basename } from './util.js';
 
 const EDIT_TOOLS = new Set(['Write', 'Edit', 'MultiEdit', 'NotebookEdit']);
@@ -10,26 +10,27 @@ const LONG_JOB_MS = 8 * 60 * 1000; // a job this long (or this busy) earns the w
 const LONG_JOB_ACTIONS = 50;
 
 export class Brain {
-  constructor({ capri, panel, voice, host, lang = 'fr' }) {
+  constructor({ capri, panel, voice, host, lang = 'fr', agent = 'Claude' }) {
     this.capri = capri;
     this.panel = panel;
     this.voice = voice;
     this.host = host;
     this.lang = lang;
+    this.agent = agent;
     this.sessions = new Map();
     this.replyFor = null;    // the session whose answer she's holding up for you
     this.onShowcase = null; // the demo's second half (app.js)
   }
 
   get t() {
-    return LINES[this.lang] || LINES.fr;
+    return getLines(this.lang, this.agent);
   }
 
   session(evt) {
     const id = evt.session_id || 'default';
     let s = this.sessions.get(id);
     if (!s) {
-      s = { id, project: 'Claude', taskStart: null, count: 0, files: new Set(), log: [], working: false, waiting: false };
+      s = { id, project: this.agent, taskStart: null, count: 0, files: new Set(), log: [], working: false, waiting: false };
       this.sessions.set(id, s);
     }
     if (evt.cwd) s.project = basename(evt.cwd);

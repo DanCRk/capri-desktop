@@ -10,11 +10,11 @@ const {
 const config = require('./config');
 const { createBridge } = require('./bridge');
 const { startWindowWatch } = require('./windows');
-const hooks = require('../../scripts/install-hooks');
-const demoSteps = require('../../scripts/demo-sequence');
-
 const ROOT = path.resolve(__dirname, '..', '..');
 const DEV = process.argv.includes('--dev');
+const AGY = process.argv.includes('--agy');
+const hooks = require(AGY ? '../../scripts/install-hooks-agy' : '../../scripts/install-hooks');
+const demoSteps = require('../../scripts/demo-sequence');
 const PORT = Number(process.env.CAPRI_PORT) || 47823;
 const SOUND_EXT = /\.(mp3|wav|ogg|m4a)$/i;
 
@@ -166,7 +166,7 @@ function resolveLang(setting) {
 // What the overlay gets: `lang` is the resolved one, `langSetting` what the user picked.
 function rendererConfig() {
   const cfg = config.load();
-  return { ...cfg, lang: resolveLang(cfg.lang), langSetting: cfg.lang };
+  return { ...cfg, lang: resolveLang(cfg.lang), langSetting: cfg.lang, agent: AGY ? 'Antigravity' : 'Claude' };
 }
 
 function updateConfig(patch) {
@@ -181,20 +181,21 @@ function rebuildTray() {
   if (!tray) return;
   const cfg = config.load();
   const hookState = hooks.status();
+  const targetName = AGY ? 'Antigravity' : 'Claude Code';
   const t = resolveLang(cfg.lang) === 'en'
     ? {
       online: `Capri — listening on ${PORT}`, teleport: 'Teleport', satellite: 'Look at the satellite', demo: 'Play demo', show: 'Bring her back', hide: 'Put her away',
       size: 'Size', small: 'Small', medium: 'Medium', large: 'Large', sound: 'Sound', mute: 'Mute',
       soundsDir: 'Open custom sounds folder', screen: 'Screen', wander: 'Wander around when idle', possess: 'Possess my windows',
-      lang: 'Language', auto: 'Automatic (system)', startup: 'Start with Windows', hooksOn: 'Claude Code hooks: installed',
-      hooksOff: 'Install Claude Code hooks', hooksRemove: 'Remove Claude Code hooks', quit: 'Quit',
+      lang: 'Language', auto: 'Automatic (system)', startup: 'Start with Windows', hooksOn: `${targetName} hooks: installed`,
+      hooksOff: `Install ${targetName} hooks`, hooksRemove: `Remove ${targetName} hooks`, quit: 'Quit',
     }
     : {
       online: `Capri — à l'écoute sur ${PORT}`, teleport: 'Téléporter', satellite: 'Regarder le satellite', demo: 'Lancer la démo', show: 'La faire revenir', hide: 'La ranger',
       size: 'Taille', small: 'Petite', medium: 'Moyenne', large: 'Grande', sound: 'Son', mute: 'Muet',
       soundsDir: 'Ouvrir le dossier des sons perso', screen: 'Écran', wander: 'Se balader quand rien ne se passe', possess: 'Posséder mes fenêtres',
-      lang: 'Langue', auto: 'Automatique (système)', startup: 'Lancer au démarrage', hooksOn: 'Hooks Claude Code : installés',
-      hooksOff: 'Installer les hooks Claude Code', hooksRemove: 'Retirer les hooks Claude Code', quit: 'Quitter',
+      lang: 'Langue', auto: 'Automatique (système)', startup: 'Lancer au démarrage', hooksOn: `Hooks ${targetName} : installés`,
+      hooksOff: `Installer les hooks ${targetName}`, hooksRemove: `Retirer les hooks ${targetName}`, quit: 'Quitter',
     };
 
   const displays = screen.getAllDisplays();
@@ -266,7 +267,8 @@ function rebuildTray() {
 // Run from a clone (`npm start`), electron.exe alone would open the default Electron app at login:
 // it needs the project folder as argument.
 function loginItemOptions() {
-  return app.isPackaged ? {} : { path: process.execPath, args: [ROOT] };
+  const extra = AGY ? ['--agy'] : [];
+  return app.isPackaged ? { args: extra } : { path: process.execPath, args: [ROOT, ...extra] };
 }
 
 function runHooks(action) {

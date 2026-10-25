@@ -4,7 +4,7 @@ import { Chip, Mask } from './chip.js';
 import { Panel } from './panel.js';
 import { Voice } from './voice.js';
 import { Brain } from './brain.js';
-import { LINES } from './lines.js';
+import { getLines } from './lines.js';
 import { pick, fmt } from './util.js';
 
 const host = window.host;
@@ -43,10 +43,11 @@ async function boot() {
   voice.configure(config);
   host.listSounds().then((list) => list.length && voice.loadCustom(list));
 
+  const agent = config.agent || 'Claude';
   const panel = new Panel({
     panel: document.getElementById('panel'),
     ticker: document.getElementById('ticker'),
-    labels: LINES[config.lang] || LINES.fr,
+    labels: getLines(config.lang, agent),
   });
 
   const capri = new Capri({
@@ -60,7 +61,7 @@ async function boot() {
   capri.possessWindows = config.possess;
   capri.setScale(config.scale);
 
-  const brain = new Brain({ capri, panel, voice, host, lang: config.lang });
+  const brain = new Brain({ capri, panel, voice, host, lang: config.lang, agent });
 
   // Click-through everywhere except on her body, the panel and her biochip.
   let interactive = false;
@@ -250,7 +251,7 @@ async function boot() {
     if (cfg.scale !== capri.scale) capri.setScale(cfg.scale);
     if (cfg.lang !== brain.lang) {
       brain.lang = cfg.lang;
-      panel.labels = LINES[cfg.lang] || LINES.fr;
+      panel.labels = getLines(cfg.lang, agent);
       document.documentElement.lang = cfg.lang;
     }
   });
@@ -324,22 +325,23 @@ async function boot() {
   else await capri.materialize(capri.spot('post'));
   const hooks = await host.hooksStatus();
   if (!hooks.installed) {
-    panel.say({ kind: 'info', line: t0(config.lang).noHooks, hold: 9000 });
+    panel.say({ kind: 'info', line: t0(config.lang, agent).noHooks, hold: 9000 });
   } else {
-    panel.say({ kind: 'info', line: pick(t0(config.lang).online), hold: 4000 });
+    panel.say({ kind: 'info', line: pick(t0(config.lang, agent).online), hold: 4000 });
   }
 }
 
 // boot-time lines that only make sense here
-function t0(lang) {
+function t0(lang, agent = 'Claude') {
+  const hookTarget = agent === 'Antigravity' ? 'Antigravity' : 'Claude Code';
   return lang === 'en'
     ? {
       online: ['Capri online.', 'Back on your desktop, choom.'],
-      noHooks: 'I can’t see Claude yet. Tray icon › “Install Claude Code hooks”.',
+      noHooks: `I can’t see ${agent} yet. Tray icon › “Install ${hookTarget} hooks”.`,
     }
     : {
       online: ['Capri en ligne.', 'De retour sur ton bureau, choom.'],
-      noHooks: 'Je ne vois pas encore Claude. Clique sur mon icône près de l’horloge, puis « Installer les hooks ».',
+      noHooks: `Je ne vois pas encore ${agent}. Clique sur mon icône près de l’horloge, puis « Installer les hooks ».`,
     };
 }
 

@@ -8,10 +8,14 @@
   "private": true,
   "scripts": {
     "start": "electron .",
+    "start-agy": "electron . --agy",
     "dev": "electron . --dev",
+    "dev-agy": "electron . --dev --agy",
     "demo": "node scripts/demo.js",
     "hooks:install": "node scripts/install-hooks.js",
     "hooks:uninstall": "node scripts/install-hooks.js --uninstall",
+    "hooks:install-agy": "node scripts/install-hooks-agy.js",
+    "hooks:uninstall-agy": "node scripts/install-hooks-agy.js --uninstall",
     "dist": "electron-builder --win"
   },
   "keywords": [

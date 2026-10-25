@@ -146,3 +146,23 @@ export const LINES = {
     },
   },
 };
+
+function replaceAgent(val, agent) {
+  if (!agent || agent === 'Claude') return val;
+  if (typeof val === 'string') {
+    return val
+      .replace(/Claude Code/g, agent)
+      .replace(/de Claude/g, `d’${agent}`)
+      .replace(/Claude/g, agent);
+  }
+  if (Array.isArray(val)) return val.map((v) => replaceAgent(v, agent));
+  if (val && typeof val === 'object') {
+    return Object.fromEntries(Object.entries(val).map(([k, v]) => [k, replaceAgent(v, agent)]));
+  }
+  return val;
+}
+
+export function getLines(lang = 'fr', agent = 'Claude') {
+  const base = LINES[lang] || LINES.fr;
+  return replaceAgent(base, agent);
+}
